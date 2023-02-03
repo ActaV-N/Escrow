@@ -8,17 +8,19 @@ contract Escrow{
     address beneficiary;
 
     bool isApproved;
+    string product;
 
     // Constructor
-    constructor(address _arbiter, address _beneficiary) payable{
+    constructor(address _arbiter, address _beneficiary, string memory _product) payable{
         require(msg.value >= 0.1 ether);
         depositer = msg.sender;
         arbiter = _arbiter;
         beneficiary = _beneficiary;
+        product = _product;
     }
 
     // Approve
-    event Approve(uint amount);
+    event Approved(uint amount, string product);
     function approve() external {
         require(msg.sender == arbiter, "Only arbiter can approve");
         require(!isApproved, "Only unapproved contract can be approved");
@@ -28,6 +30,6 @@ contract Escrow{
         require(success);
 
         isApproved = true;
-        emit Approve(amount);
+        emit Approved(amount, product);
     }
 }
