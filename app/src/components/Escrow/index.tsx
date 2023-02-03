@@ -6,6 +6,7 @@ export type EscrowT = {
     product:string,
     deposit:string,
     isArbiter: boolean,
+    isApproved?:boolean,
     handleApprove: () => Promise<void>
 };
 

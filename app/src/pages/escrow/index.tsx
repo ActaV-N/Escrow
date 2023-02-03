@@ -2,6 +2,7 @@ import Escrow, {EscrowT} from '@/components/Escrow'
 import { useAccount } from '@/hooks/useAccount'
 import { approve } from '@/lib/approve'
 import { deploy } from '@/lib/deploy'
+import { loadEscrow } from '@/lib/loadEscrow'
 import { ethers, Signer } from 'ethers'
 import Head from 'next/head'
 import {useRouter} from 'next/router'
@@ -10,13 +11,13 @@ import { FormEventHandler, useEffect, useState } from 'react'
 export default function EscrowPage() {
   const [escrows, setEscrows] = useState<EscrowT[]>([])
   const [createMode, setCreateMode] = useState(false)
+  const [isLoading, setIsLoading] = useState(true);
 
   const {signer, getAccounts, account} = useAccount()
   const router = useRouter();
 
   useEffect(() => {
     if(account){
-        console.log(account);
         setEscrows(escrows => {
             return escrows.map(escrow => ({
                 ...escrow,
@@ -27,19 +28,48 @@ export default function EscrowPage() {
   }, [account])
 
   useEffect(() => {
-    console.log(escrows)
-  }, [escrows])
-
-  useEffect(() => {
     async function checkAccount(){
         const accounts = await getAccounts();
         if(accounts.length === 0){
+            console.log("?")
             router.replace('/');
         }
     }
 
     checkAccount();
   }, [])
+
+  useEffect(() => {
+    if(signer) setIsLoading(false);
+    async function getContracts(){
+        const response = await fetch('/api/contracts');
+        const contracts = await response.json();
+        
+        const res: EscrowT[] = []
+        for(const contract of contracts){
+            const escrow = await loadEscrow(contract.address, signer as Signer) as EscrowT;
+            if(escrow) res.push(escrow);
+        }
+        
+        setEscrows(res);
+    }
+
+    getContracts();
+  }, [signer])
+
+  useEffect(() => {
+    if(escrows){
+        for(const escrow of escrows){
+            if(escrow.isApproved){
+                const btn = (document.getElementById(escrow.contract) as HTMLElement).querySelector('.approve-button');
+                btn!.classList.add('pointer-events-none');
+                btn!.classList.add('opacity-75');
+                btn!.classList.add('cursor-not-allowed');
+                btn!.innerHTML = "APPROVED";
+            }
+        }
+    }
+  }, [escrows])
 
   const handleCreateMode = (mode: boolean) => {
     setCreateMode(mode);
@@ -63,8 +93,6 @@ export default function EscrowPage() {
     const contract = await deploy(signer as Signer, arbiterAddress, beneficiaryAddress, product, amountOfEther);
     const depositer = await contract.signer.getAddress();
 
-
-
     const escrow: EscrowT = {
         depositer: depositer,
         contract: contract.address.toString(),
@@ -74,7 +102,7 @@ export default function EscrowPage() {
         deposit: amountOfEther.toString(),
         isArbiter: `${account}` === arbiterAddress.toLowerCase(),
         handleApprove: async () => {
-            contract.on('approved', () => {
+            contract.on('Approved', () => {
                 const btn = (document.getElementById(contract.address.toString()) as HTMLElement).querySelector('.approve-button');
                 btn!.classList.add('pointer-events-none');
                 btn!.classList.add('opacity-75');
@@ -84,6 +112,15 @@ export default function EscrowPage() {
             await approve(contract, signer as Signer);
         }
     }
+
+    console.log('S')
+    await fetch('/api/contracts', {
+        method:'POST',
+        body:JSON.stringify({
+            contract: contract.address.toString()
+        })
+    });
+    console.log('F')
 
     setEscrows([...escrows, escrow]);
 
@@ -153,12 +190,22 @@ export default function EscrowPage() {
                     </button>
                 </form>
             </div> : 
-            <div className='bg-[#f7f7f7] overflow-y-auto px-5 py-5 rounded-sm grid grid-cols-autofill gap-5'>
-                <Escrow escrows={escrows}/>
-                <div className='flex items-center justify-center aspect-square border-dotted border-2 border-slate-700 rounded-sm'>
-                    <button className='cursor-pointer w-full h-full block' onClick={() => handleCreateMode(true)}>
-                        +
-                    </button>
+            <div className='overflow-auto'>
+                <div className='bg-[#f7f7f7] overflow-y-auto px-5 py-5 rounded-sm grid grid-cols-autofill gap-5'>
+                    {isLoading ? 
+                    <div className='h-screen bg-gradient-to-r from-sky-500 to-indigo-500 flex items-center justify-center'>
+                        <svg className="animate-spin -ml-1 mr-3 h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div> :<>
+                        <Escrow escrows={escrows}/>
+                        <div className='flex items-center justify-center aspect-square border-dotted border-2 border-slate-700 rounded-sm'>
+                            <button className='cursor-pointer w-full h-full block' onClick={() => handleCreateMode(true)}>
+                                +
+                            </button>
+                        </div>
+                    </>}
                 </div>
             </div>}
         </div>

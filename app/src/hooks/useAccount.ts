@@ -6,6 +6,11 @@ export const useAccount = () => {
     const [signer, setSigner] = useState<Signer>();
     const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        setSigner(() => provider.getSigner());
+    }, [account])
+
     const getAccounts = async () => {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const accounts = await provider.send('eth_accounts', []);
@@ -26,7 +31,6 @@ export const useAccount = () => {
             
             if(accounts[0]){
                 _setAccount(accounts[0]);
-                setSigner(provider.getSigner());
             } else{
                 setTimeout(() => {
                     setLoading(false);

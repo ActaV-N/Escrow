@@ -6,6 +6,7 @@ describe('Escrow Contract test', () => {
     let contract: Contract;
     let depositer: Signer, arbiter: Signer, beneficiary: Signer;
     const deposit: BigNumber = ethers.utils.parseEther('1');
+    const product: string = "Real estate";
 
     beforeEach(async () => {
         depositer = ethers.provider.getSigner(0);
@@ -13,7 +14,7 @@ describe('Escrow Contract test', () => {
         beneficiary = ethers.provider.getSigner(2);
 
         const EscrowFactory = await ethers.getContractFactory('Escrow');
-        contract = await EscrowFactory.connect(depositer).deploy(arbiter.getAddress(), beneficiary.getAddress(), {value: deposit});
+        contract = await EscrowFactory.connect(depositer).deploy(arbiter.getAddress(), beneficiary.getAddress(), product, {value: deposit});
 
         // Wait until contract be deployed
         await contract.deployed();

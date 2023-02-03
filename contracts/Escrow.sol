@@ -3,12 +3,12 @@ pragma solidity ^0.8.17;
 pragma experimental ABIEncoderV2;
 
 contract Escrow{
-    address depositer;
-    address arbiter;
-    address beneficiary;
+    address public depositer;
+    address public arbiter;
+    address public beneficiary;
 
-    bool isApproved;
-    string product;
+    bool public isApproved;
+    string public product;
 
     // Constructor
     constructor(address _arbiter, address _beneficiary, string memory _product) payable{

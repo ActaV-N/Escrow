@@ -19,6 +19,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["global.d.ts","next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["global.d.ts","next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.db"],
+  "exclude": ["node_modules", "prisma/create.ts"]
 }
